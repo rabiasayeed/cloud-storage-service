@@ -1,4 +1,4 @@
-﻿import supabase from "../config/Supabase.js";
+import supabase from "../config/Supabase.js";
 
 export const authMiddleware = async (req, res, next) => {
     try {
@@ -13,7 +13,7 @@ export const authMiddleware = async (req, res, next) => {
             });
         }
 
-        const token = authHeader.split(" ")[1];
+        const token = authHeader.slice(7).trim(); if (!token || token.length > 4096) return res.status(401).json({ error: { code: "INVALID_TOKEN", message: "Invalid or expired token" } });
 
         const {
             data: { user },
@@ -42,3 +42,4 @@ export const authMiddleware = async (req, res, next) => {
         });
     }
 };
+

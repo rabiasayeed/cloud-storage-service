@@ -1,4 +1,4 @@
-﻿import supabase from "../config/Supabase.js";
+import supabase from "../config/Supabase.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 

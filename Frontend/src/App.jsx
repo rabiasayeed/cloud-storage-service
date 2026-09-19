@@ -2,272 +2,42 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import api from './services/api'
 
-const demoFolders = [{ id: 'demo-1', name: 'Design Assets' }, { id: 'demo-2', name: 'Work Projects' }, { id: 'demo-3', name: 'Personal' }]
-const demoFiles = [
-  { id: 'demo-f1', name: 'Q4 Brand Guidelines.pdf', mime_type: 'application/pdf', size_bytes: 8400000, updated_at: new Date().toISOString(), starred: true },
-  { id: 'demo-f2', name: 'Product Roadmap 2025.docx', mime_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size_bytes: 2100000, updated_at: new Date(Date.now() - 86400000).toISOString(), starred: false },
-  { id: 'demo-f3', name: 'Homepage Exploration.png', mime_type: 'image/png', size_bytes: 14800000, updated_at: new Date(Date.now() - 172800000).toISOString(), starred: true }
-]
-const nav = [['My files', '[]'], ['Recent', 'R'], ['Starred', '*'], ['Shared with me', 'S'], ['Trash', 'T']]
-const bytes = value => value > 1048576 ? (value / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round((value || 0) / 1024)) + ' KB'
-const typeOf = file => (file.name || 'FILE').split('.').pop().toUpperCase().slice(0, 5)
-const colorOf = file => file.mime_type && file.mime_type.includes('pdf') ? 'red' : file.mime_type && file.mime_type.includes('image') ? 'purple' : file.mime_type && file.mime_type.includes('zip') ? 'amber' : 'blue'
-const dateOf = value => value ? new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Recently'
-const storageText = value => { if (!value) return '0 B'; if (value >= 1073741824) return (value / 1073741824).toFixed(1) + ' GB'; if (value >= 1048576) return (value / 1048576).toFixed(1) + ' MB'; return Math.ceil(value / 1024) + ' KB' }
+const NAV = [['My files','⌂'],['Recent','◷'],['Starred','★'],['Shared with me','⇄'],['Trash','♜']]
+const demoFolders = [{ id:'demo-1', name:'Design Assets' },{ id:'demo-2', name:'Work Projects' },{ id:'demo-3', name:'Personal' }]
+const demoFiles = [{ id:'demo-f1', name:'Q4 Brand Guidelines.pdf', mime_type:'application/pdf', size_bytes:8400000, updated_at:new Date().toISOString(), starred:true },{ id:'demo-f2', name:'Product Roadmap.docx', mime_type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size_bytes:2100000, updated_at:new Date(Date.now()-86400000).toISOString() },{ id:'demo-f3', name:'Homepage Exploration.png', mime_type:'image/png', size_bytes:14800000, updated_at:new Date(Date.now()-172800000).toISOString(), starred:true }]
+const bytes = n => n > 1048576 ? (n/1048576).toFixed(1)+' MB' : Math.max(1,Math.round((n||0)/1024))+' KB'
+const ext = file => (file?.name || 'FILE').split('.').pop().toUpperCase().slice(0,5)
+const color = file => file?.mime_type?.includes('pdf') ? 'red' : file?.mime_type?.includes('image') ? 'purple' : file?.mime_type?.includes('text') ? 'green' : 'blue'
+const date = value => value ? new Date(value).toLocaleDateString(undefined,{month:'short',day:'numeric'}) : 'Recently'
+const emailOk = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 
-function Auth({ onSuccess }) {
-  const [mode, setMode] = useState('login')
-  const [form, setForm] = useState({ name: '', email: '', password: '' })
-  const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
-  const submit = async event => {
-    event.preventDefault(); setBusy(true); setError('')
-    try {
-      const result = mode === 'login' ? await api.login(form) : await api.register(form)
-      if (result.session && result.session.access_token) {
-        localStorage.setItem('cloudly_token', result.session.access_token); onSuccess(result.user)
-      } else if (mode === 'register') { setMode('login'); setError('Account created. Please sign in.') }
-    } catch (caught) { setError(caught.message) } finally { setBusy(false) }
-  }
-  return <div className="auth-shell"><div className="auth-card"><div className="brand"><b>*</b> Cloudly</div><div className="modal-icon">*</div><h1>{mode === 'login' ? 'Welcome back' : 'Create your account'}</h1><p>Secure, simple storage for everything you work on.</p><form onSubmit={submit}>{mode === 'register' && <input required placeholder="Your name" value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} />}<input required type="email" placeholder="Email address" value={form.email} onChange={event => setForm({ ...form, email: event.target.value })} /><input required minLength="6" type="password" placeholder="Password" value={form.password} onChange={event => setForm({ ...form, password: event.target.value })} />{error && <div className="notice">{error}</div>}<button className="submit" disabled={busy}>{busy ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}</button></form><button className="auth-switch" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError('') }}>{mode === 'login' ? 'Need an account? Create one' : 'Already have an account? Sign in'}</button><button className="demo-button" onClick={() => onSuccess({ name: 'Jordan Davis', demo: true })}>Preview demo workspace</button></div></div>
-}
+function Auth({ onSuccess }) { const [mode,setMode]=useState('login'),[form,setForm]=useState({name:'',email:'',password:''}),[error,setError]=useState(''),[busy,setBusy]=useState(false); const submit=async e=>{e.preventDefault();setError('');if(form.password.length<8)return setError('Password must be at least 8 characters.');if(!emailOk(form.email))return setError('Enter a valid email address.');setBusy(true);try{const result=mode==='login'?await api.login(form):await api.register(form);if(result.session?.access_token){localStorage.setItem('cloudly_token',result.session.access_token);onSuccess(result.user)}else{setMode('login');setError('Account created. Please sign in.')}}catch(err){setError(err.message)}finally{setBusy(false)}};return <div className="auth-shell"><div className="auth-card"><div className="brand"><b>✦</b> Cloudly</div><div className="modal-icon">☁</div><h1>{mode==='login'?'Welcome back':'Create your account'}</h1><p>Secure, simple storage for everything you work on.</p><form onSubmit={submit}>{mode==='register'&&<input required placeholder="Your name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/>}<input required type="email" placeholder="Email address" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/><input required type="password" placeholder="Password (8+ characters)" value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/>{error&&<div className="notice">{error}</div>}<button className="submit" disabled={busy}>{busy?'Please wait…':mode==='login'?'Sign in':'Create account'}</button></form><button className="auth-switch" onClick={()=>{setMode(mode==='login'?'register':'login');setError('')}}>{mode==='login'?'Need an account? Create one':'Already have an account? Sign in'}</button><button className="demo-button" onClick={()=>onSuccess({name:'Jordan Davis',demo:true})}>Preview demo workspace</button></div></div> }
 
-function ProfilePage({ user, initials, onPhotoChange, onPhotoOpen }) {
-  const name = user.name || 'Cloudly user'
-  const email = user.email || 'No email available'
-  return <section className="profile-page">
-    <div className="profile-card"><label className="profile-photo-picker"><div className="profile-avatar" onClick={() => user.image_url && onPhotoOpen?.()} title={user.image_url ? 'Open profile photo' : 'Choose a profile photo'}>{user.image_url ? <img src={user.image_url} alt="Profile" /> : initials}</div><input type="file" accept="image/*" onChange={onPhotoChange} /><span>Change photo</span></label><div><h2>{name}</h2><p>{email}</p><span className="profile-plan">{user.demo ? 'Demo workspace' : 'Free plan'}</span></div></div>
-    <div className="profile-details"><h2>Profile details</h2><label>Full name<strong>{name}</strong></label><label>Email address<strong>{email}</strong></label><label>Account type<strong>{user.demo ? 'Demo account' : 'Free account'}</strong></label></div>
-  </section>
-}
+function Modal({ children, onClose }) { return <div className="backdrop" onClick={onClose}><div className="modal" onClick={e=>e.stopPropagation()}><button className="close" onClick={onClose}>×</button>{children}</div></div> }
+function FileCard({ file, view, onOpen, onStar, onMenu }) { return <article className={'file '+(view==='list'?'file-row':'')}><div className="file-top"><b className={'type '+color(file)}>{ext(file)}</b><button className="star" aria-label="Toggle favorite" onClick={()=>onStar(file)}>{file.starred?'★':'☆'}</button></div><strong title={file.name}>{file.name}</strong><small>{bytes(file.size_bytes)} · {date(file.updated_at)}</small><footer><i>Y</i><span>{file.owner_id?'Shared':'You'}</span><button onClick={()=>onOpen(file)}>Open</button><button onClick={()=>onMenu(file)}>•••</button></footer></article> }
+function FolderCard({ folder, onOpen, onMenu }) { return <button className="folder" onClick={()=>onOpen(folder)}><i className="blue">▰</i><span><strong>{folder.name}</strong><small>{folder.itemCount||0} items · Updated recently</small></span><em onClick={e=>{e.stopPropagation();onMenu(folder)}}>•••</em></button> }
 
-function ProfilePhotoPage({ user, onBack }) {
-  return <section className="profile-photo-page">
-    <button className="new" type="button" onClick={onBack}>Back to profile</button>
-    {user.image_url ? <img src={user.image_url} alt="Profile" /> : <p>No profile photo selected.</p>}
-  </section>
-}
+export default function App(){
+ const [user,setUser]=useState(null),[ready,setReady]=useState(false),[active,setActive]=useState('My files'),[folder,setFolder]=useState(null),[folders,setFolders]=useState([]),[files,setFiles]=useState([]),[cursor,setCursor]=useState(null),[query,setQuery]=useState(''),[view,setView]=useState('grid'),[modal,setModal]=useState(null),[selected,setSelected]=useState(null),[busy,setBusy]=useState(false),[progress,setProgress]=useState(0),[notice,setNotice]=useState(''),[error,setError]=useState(''),[folderName,setFolderName]=useState(''),[renameName,setRenameName]=useState(''),[shareEmail,setShareEmail]=useState(''),[role,setRole]=useState('viewer'),[preview,setPreview]=useState(null),[versions,setVersions]=useState([]),[activities,setActivities]=useState([]),[linkUrl,setLinkUrl]=useState(''); const picker=useRef(null)
+ useEffect(()=>{const demo=localStorage.getItem('cloudly_demo_user'),token=localStorage.getItem('cloudly_token');if(demo){try{setUser(JSON.parse(demo))}catch{}setReady(true);return}if(!token){setReady(true);return}api.me().then(r=>setUser(r.user)).catch(()=>localStorage.removeItem('cloudly_token')).finally(()=>setReady(true))},[])
+ const close=()=>{setModal(null);setSelected(null);setFolderName('');setRenameName('');setShareEmail('');setLinkUrl('');setProgress(0)}
+ const load=async(section=active,nextCursor=null)=>{if(!user||user.demo){setFolders(demoFolders);setFiles(demoFiles);return}setBusy(true);setError('');try{if(section==='Trash'){const r=await api.trash();setFiles(r.files||[]);setFolders(r.folders||[]);setCursor(null)}else if(section==='Recent'){const r=await api.recent();setFiles(r.files||[]);setFolders([])}else if(section==='Shared with me'){const r=await api.shared();setFiles(r.files||[]);setFolders(r.folders||[])}else if(section==='Starred'){const r=await api.search({starred:'true',limit:50});setFiles(r.results||[]);setFolders([])}else{const [f,fs]=await Promise.all([api.folders(folder?.id),api.files(folder?.id,nextCursor)]);setFolders(f.folders||[]);setFiles(nextCursor?[...files,...(fs.files||[])]:fs.files||[]);setCursor(fs.pagination?.nextCursor||null)}}catch(err){setError(err.message)}finally{setBusy(false)}}
+ useEffect(()=>{if(user)load(active)},[user,active,folder])
+ const searchTimer=useRef(null);useEffect(()=>{if(!user||!query.trim()){if(user&&active!=='My files')load(active);return}clearTimeout(searchTimer.current);searchTimer.current=setTimeout(async()=>{if(user.demo){setFiles(demoFiles.filter(f=>f.name.toLowerCase().includes(query.toLowerCase())));return}try{const r=await api.search({q:query.trim(),limit:50});setFiles(r.results||[]);setCursor(r.pagination?.nextCursor||null)}catch(err){setError(err.message)}},300);return()=>clearTimeout(searchTimer.current)},[query])
+ const visible=useMemo(()=>files.filter(f=>(f.name||'').toLowerCase().includes(query.toLowerCase())),[files,query]),visibleFolders=useMemo(()=>folders.filter(f=>(f.name||'').toLowerCase().includes(query.toLowerCase())),[folders,query]); const initials=(user?.name||user?.email||'CU').split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase(); const used=files.reduce((n,f)=>n+Number(f.size_bytes||0),0)
+ const upload=async e=>{const chosen=Array.from(e.target.files||e.dataTransfer?.files||[]);if(!chosen.length)return;setBusy(true);try{if(user.demo){setFiles(current=>[...chosen.map((file,i)=>({id:'demo-'+Date.now()+i,name:file.name,mime_type:file.type,size_bytes:file.size,updated_at:new Date().toISOString(),blob:file})),...current])}else for(const file of chosen){setNotice('Uploading '+file.name);const r=await api.upload(file,folder?.id,p=>setProgress(p));setFiles(current=>[r.file,...current])}setNotice(chosen.length+' file(s) uploaded');close()}catch(err){setError(err.message);close()}finally{setBusy(false)}}
+ const createFolder=async e=>{e.preventDefault();if(!folderName.trim())return;try{const r=user.demo?{folder:{id:'demo-folder-'+Date.now(),name:folderName.trim()}}:await api.createFolder({name:folderName.trim(),parentId:folder?.id});setFolders(v=>[...v,r.folder]);setNotice('Folder created');close()}catch(err){setError(err.message)}}
+ const rename=async e=>{e.preventDefault();if(!selected||!renameName.trim())return;try{if(selected.mime_type){await api.renameFile(selected.id,renameName.trim());setFiles(v=>v.map(x=>x.id===selected.id?{...x,name:renameName.trim()}:x))}else{await api.renameFolder(selected.id,renameName.trim());setFolders(v=>v.map(x=>x.id===selected.id?{...x,name:renameName.trim()}:x))}setNotice('Renamed');close()}catch(err){setError(err.message)}}
+ const remove=async item=>{try{if(!user.demo){if(active==='Trash')await api.permanentDeleteFile(item.id);else if(item.mime_type)await api.deleteFile(item.id);else await api.deleteFolder(item.id)}setFiles(v=>v.filter(x=>x.id!==item.id));setFolders(v=>v.filter(x=>x.id!==item.id));setNotice(active==='Trash'?'Permanently deleted':'Moved to trash')}catch(err){setError(err.message)}}
+ const star=async file=>{const next=!file.starred;setFiles(v=>v.map(x=>x.id===file.id?{...x,starred:next}:x));if(!user.demo)try{await (next?api.star:api.unstar)({resourceType:'file',resourceId:file.id})}catch(err){setError(err.message)}}
+ const openFile=async file=>{if(user.demo&&file.blob){setPreview({file,url:URL.createObjectURL(file.blob)});return}try{const r=await api.preview(file.id);setPreview({file,url:r.signedUrl})}catch(err){setError(err.message)}}
+ const share=async e=>{e.preventDefault();if(!selected||!emailOk(shareEmail))return setError('Enter a valid recipient email.');try{await api.share({resourceType:selected.mime_type?'file':'folder',resourceId:selected.id,granteeUserId:shareEmail,role});setNotice('Share invitation saved');close()}catch(err){setError(err.message)}}
+ const publicLink=async()=>{try{const r=await api.createPublicLink({resourceType:'file',resourceId:selected.id});const url=location.origin+'/shared/'+r.linkShare.token;setLinkUrl(url);await navigator.clipboard?.writeText(url);setModal('link')}catch(err){setError(err.message)}}
+ const showVersions=async file=>{try{const r=await api.versions(file.id);setSelected(file);setVersions(r.versions||[]);setModal('versions')}catch(err){setError(err.message)}}
+ const showActivity=async file=>{try{const r=await api.activity('file',file.id);setSelected(file);setActivities(r.activities||[]);setModal('activity')}catch(err){setError(err.message)}}
+ if(!ready)return <div className="empty-state">Loading your workspace…</div>;if(!user)return <Auth onSuccess={u=>{if(u.demo)localStorage.setItem('cloudly_demo_user',JSON.stringify(u));setUser(u)}}/>
+ const logout=()=>{localStorage.removeItem('cloudly_token');localStorage.removeItem('cloudly_demo_user');setUser(null)}
+ return <div className="app-shell"><aside className="sidebar"><div className="brand"><b>✦</b> Cloudly</div><button className="upload" onClick={()=>setModal('upload')}>＋ Upload files</button><nav>{NAV.map(([name,icon])=><button key={name} className={active===name?'active':''} onClick={()=>{setActive(name);setFolder(null);setQuery('')}}><span className="icon">{icon}</span>{name}</button>)}</nav><button className={active==='Profile'?'active':''} onClick={()=>setActive('Profile')}>◎ My profile</button><div className="side-bottom"><div className="storage"><span>Storage</span><span>{bytes(used)} / 15 GB</span></div><div className="progress"><i style={{width:Math.min(100,used/(15*1073741824)*100)+'%'}}/></div><button onClick={logout}>Sign out</button><button className="profile" onClick={()=>setActive('Profile')}><b>{initials}</b><span><strong>{user.name||user.email}</strong><small>{user.demo?'Demo workspace':'Free plan'}</small></span></button></div></aside><main><header><div className="crumb"><button onClick={()=>{setActive('My files');setFolder(null)}}>My files</button>{folder&&<> / <b>{folder.name}</b></>}</div><div className="actions"><label className="search">⌕ <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search files and folders"/><kbd>⌘ K</kbd></label><button className="mini" onClick={()=>setActive('Profile')}>{initials}</button></div></header><div className="content">{notice&&<div className="toast">{notice}<button onClick={()=>setNotice('')}>×</button></div>}{error&&<div className="notice page-notice">{error}<button onClick={()=>setError('')}>×</button></div>}{active==='Profile'?<><section className="welcome"><div><p>Account</p><h1>My profile</h1><span>{user.email}</span></div></section><section className="profile-page"><div className="profile-card"><div className="profile-avatar">{initials}</div><div><h2>{user.name||'Cloudly user'}</h2><p>{user.email}</p><span className="profile-plan">{user.demo?'Demo workspace':'Free plan'}</span></div></div></section></>:<><section className="welcome"><div><p>{new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'})}</p><h1>{folder?.name||active}</h1><span>{active==='Trash'?'Items are automatically deleted after 30 days.':'Manage your files and folders in one place.'}</span></div><div>{folder&&<button className="new" onClick={()=>{setFolder(null);setActive('My files')}}>Back</button>}<button className="new" onClick={()=>setModal('folder')}>＋ New folder</button></div></section>{active==='My files'&&<section className="stats"><Stat icon="▦" label="All files" value={files.length} note="Your workspace"/><Stat icon="⇄" label="Shared with me" value="→" note="Collaborate securely"/><Stat icon="◒" label="Storage used" value={bytes(used)} note="of 15 GB available"/></section>}<section className="block"><div className="heading"><h2>{active==='Trash'?'Trash':'Folders'} <small>{visibleFolders.length}</small></h2><div><button className={view==='grid'?'selected':''} onClick={()=>setView('grid')}>Grid</button><button className={view==='list'?'selected':''} onClick={()=>setView('list')}>List</button></div></div><div className={view==='grid'?'folder-grid':'folder-list'}>{visibleFolders.map(f=><FolderCard key={f.id} folder={f} onOpen={x=>{setFolder(x);setActive('My files');setQuery('')}} onMenu={x=>{setSelected(x);setRenameName(x.name);setModal('context')}}/>)}{active!=='Trash'&&<button className="folder add" onClick={()=>setModal('folder')}><b>＋</b><strong>Create new folder</strong></button>}</div></section><section className="block files"><div className="heading"><h2>{active==='Trash'?'Deleted files':active==='My files'?'Files':active} <small>{visible.length}</small></h2><button className="new" onClick={()=>setModal('upload')}>＋ Upload</button></div>{busy&&!files.length?<div className="empty-state">Loading…</div>:visible.length?<div className={view==='grid'?'file-grid':'file-list'}>{visible.map(file=><FileCard key={file.id} file={file} view={view} onStar={star} onOpen={openFile} onMenu={f=>{setSelected(f);setModal('context')}}/> )}</div>:<div className="empty-state"><b>No files here yet</b><span>Upload a file or create a folder to get started.</span></div>}{cursor&&<button className="load-more" onClick={()=>load(active,cursor)}>Load more</button>}</section></>}</div></main>{preview&&<Modal onClose={()=>{if(preview.url?.startsWith('blob:'))URL.revokeObjectURL(preview.url);setPreview(null)}}><h2>{preview.file.name}</h2>{preview.file.mime_type?.startsWith('image/')?<img className="preview-image" src={preview.url} alt={preview.file.name}/>:<iframe className="preview-frame" src={preview.url} title={preview.file.name}/>}</Modal>}{modal==='upload'&&<Modal onClose={close}><h2>Upload files</h2><p>Drag files here or choose from your device.</p><button className="drop" onClick={()=>picker.current?.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();upload(e)}}>⇧<b>Click to choose or drop files</b><small>{progress?`Uploading ${progress}%`:'Up to 100 MB per file'}</small></button><input ref={picker} hidden type="file" multiple onChange={upload}/></Modal>}{modal==='folder'&&<Modal onClose={close}><form onSubmit={createFolder}><h2>Create a folder</h2><input autoFocus required value={folderName} onChange={e=>setFolderName(e.target.value)} placeholder="Folder name"/><button className="submit">Create folder</button></form></Modal>}{modal==='context'&&selected&&<Modal onClose={close}><h2>{selected.name}</h2><div className="context-actions"><button onClick={()=>selected.mime_type?openFile(selected):null}>Open / preview</button><button onClick={()=>setModal('rename')}>Rename</button>{selected.mime_type&&<><button onClick={()=>setModal('share')}>Share</button><button onClick={publicLink}>Copy public link</button><button onClick={()=>showVersions(selected)}>Version history</button><button onClick={()=>showActivity(selected)}>Activity log</button></>}{active==='Trash'?<><button onClick={async()=>{await api.restoreFile(selected.id);close();load(active)}}>Restore</button><button className="danger" onClick={()=>remove(selected)}>Delete permanently</button></>:<button className="danger" onClick={()=>remove(selected)}>Move to trash</button>}</div></Modal>}{modal==='rename'&&<Modal onClose={close}><form onSubmit={rename}><h2>Rename</h2><input autoFocus required value={renameName} onChange={e=>setRenameName(e.target.value)}/><button className="submit">Save</button></form></Modal>}{modal==='share'&&<Modal onClose={close}><form onSubmit={share}><h2>Share {selected?.name}</h2><input required type="email" placeholder="recipient@email.com" value={shareEmail} onChange={e=>setShareEmail(e.target.value)}/><select value={role} onChange={e=>setRole(e.target.value)}><option value="viewer">Viewer</option><option value="editor">Editor</option></select><button className="submit">Share</button></form></Modal>}{modal==='link'&&<Modal onClose={close}><h2>Public link ready</h2><p className="link-output">{linkUrl}</p><button className="submit" onClick={close}>Done</button></Modal>}{modal==='versions'&&<Modal onClose={close}><h2>Version history</h2><div className="activity-list">{versions.length?versions.map(v=><div key={v.id}><span>Version {v.version_number}</span><small>{date(v.created_at)} · {bytes(v.size_bytes)}</small><button onClick={async()=>{await api.revertVersion(selected.id,v.id);close();load(active)}}>Revert</button></div>):<p>No versions recorded yet.</p>}</div></Modal>}{modal==='activity'&&<Modal onClose={close}><h2>Activity log</h2><div className="activity-list">{activities.map(a=><div key={a.id}><span>{a.action}</span><small>{date(a.created_at)}</small></div>)}</div></Modal>}</div>}
+function Stat({icon,label,value,note}){return <div className="stat"><i>{icon}</i><span>{label}<strong>{value}</strong><small>{note}</small></span></div>}
 
-export default function App() {
-  const [user, setUser] = useState(null)
-  const [authReady, setAuthReady] = useState(false)
-  const [active, setActive] = useState('My files')
-  const [folders, setFolders] = useState([])
-  const [currentFolder, setCurrentFolder] = useState(null)
-  const [files, setFiles] = useState([])
-  const [query, setQuery] = useState('')
-  const [view, setView] = useState('grid')
-  const [modal, setModal] = useState('')
-  const [selected, setSelected] = useState(null)
-  const [folderName, setFolderName] = useState('')
-  const [shareEmail, setShareEmail] = useState('')
-  const [notice, setNotice] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [renameName, setRenameName] = useState('')
-  const [linkUrl, setLinkUrl] = useState('')
-  const picker = useRef(null)
 
-  useEffect(() => {
-    const demoUser = localStorage.getItem('cloudly_demo_user')
-    const token = localStorage.getItem('cloudly_token')
-    if (demoUser) {
-      try { setUser(JSON.parse(demoUser)) } catch { localStorage.removeItem('cloudly_demo_user') }
-      setAuthReady(true)
-      return
-    }
-    if (!token) { setAuthReady(true); return }
-    api.me()
-      .then(result => setUser(result.user))
-      .catch(() => localStorage.removeItem('cloudly_token'))
-      .finally(() => setAuthReady(true))
-  }, [])
-
-  const saveProfilePhoto = event => {
-    const file = event.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const image = new Image()
-      image.onload = async () => {
-        const scale = Math.min(1, 512 / Math.max(image.width, image.height))
-        const canvas = document.createElement('canvas')
-        canvas.width = Math.max(1, Math.round(image.width * scale))
-        canvas.height = Math.max(1, Math.round(image.height * scale))
-        canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height)
-        const imageUrl = canvas.toDataURL('image/jpeg', 0.8)
-        try {
-          const nextUser = user.demo ? { ...user, image_url: imageUrl } : (await api.updateProfile({ imageUrl })).user
-          if (nextUser.demo) localStorage.setItem('cloudly_demo_user', JSON.stringify(nextUser))
-          setUser(nextUser)
-          setNotice('Profile photo updated')
-        } catch (caught) { setError(caught.message) }
-      }
-      image.src = reader.result
-    }
-    reader.readAsDataURL(file)
-    event.target.value = ''
-  }
-
-  const load = async section => {
-    setLoading(true); setError('')
-    try {
-      if (section === 'Trash') { const result = await api.trash(); setFiles(result.files || []); setFolders([]) }
-      else if (section === 'Recent') { const result = await api.recent(); setFiles(result.files || []) }
-      else if (section === 'Shared with me') { const result = await api.shared(); setFiles(result.files || result.shares || []) }
-      else { const results = await Promise.all([api.folders(currentFolder?.id), api.files(currentFolder?.id)]); setFolders(results[0].folders || []); setFiles(results[1].files || []) }
-    } catch (caught) {
-      setError(caught.message)
-      if (user && user.demo) { setFolders(demoFolders); setFiles(demoFiles) }
-    } finally { setLoading(false) }
-  }
-  useEffect(() => { if (user && !user.demo) load(active) }, [user, active, currentFolder])
-  useEffect(() => { if (user && user.demo) { setFolders(demoFolders); setFiles(demoFiles) } }, [user])
-
-  const visible = useMemo(() => files.filter(file => (file.name || '').toLowerCase().includes(query.toLowerCase())).filter(file => active !== 'Starred' || file.starred), [files, query, active])
-  const visibleFolders = useMemo(() => folders.filter(folder => (folder.name || '').toLowerCase().includes(query.toLowerCase())), [folders, query])
-  const storageUsed = useMemo(() => files.reduce((total, file) => total + Number(file.size_bytes || 0), 0), [files])
-  const storagePercent = Math.min(100, Math.round((storageUsed / (15 * 1073741824)) * 100))
-  const close = () => { setModal(''); setSelected(null); setShareEmail(''); setFolderName(''); setRenameName(''); setLinkUrl('') }
-  const upload = async event => {
-    const chosen = Array.from(event.target.files || event.dataTransfer.files || [])
-    if (!chosen.length) return
-    try {
-      if (user.demo) setFiles(current => [...chosen.map((file, index) => ({ id: 'demo-upload-' + Date.now() + index, name: file.name, mime_type: file.type, blob: file, size_bytes: file.size, updated_at: new Date().toISOString(), starred: false })), ...current])
-      else { const uploaded = await Promise.all(chosen.map(file => api.upload(file, currentFolder?.id))); setFiles(current => [...uploaded.map(item => item.file), ...current]) }
-      setNotice(chosen.length + ' file(s) uploaded'); close()
-    } catch (caught) { setError(caught.message); close() }
-  }
-  const createFolder = async event => {
-    event.preventDefault(); if (!folderName.trim()) return
-    try {
-      const result = user.demo ? { folder: { id: 'demo-folder-' + Date.now(), name: folderName.trim() } } : await api.createFolder({ name: folderName.trim(), parentId: currentFolder?.id })
-      setFolders(current => [...current, result.folder]); setNotice('Folder created'); close()
-    } catch (caught) { setError(caught.message) }
-  }
-  const copyFile = async event => {
-    event.preventDefault()
-    if (!selected) return
-    const folderId = event.currentTarget.folder.value || null
-    try {
-      if (user.demo) {
-        const copy = { ...selected, id: 'demo-copy-' + Date.now(), name: 'Copy of ' + selected.name }
-        setFiles(current => [...current, copy])
-      } else {
-        const result = await api.copyFile(selected.id, folderId)
-        if ((currentFolder?.id || null) === folderId) setFiles(current => [...current, result.file])
-      }
-      setNotice('File copied')
-      close()
-    } catch (caught) { setError(caught.message) }
-  }
-  const toggleStar = async file => {
-    const starred = !file.starred; setFiles(current => current.map(item => item.id === file.id ? { ...item, starred } : item))
-    if (!user.demo) { try { await (starred ? api.star : api.unstar)({ resourceType: 'file', resourceId: file.id }) } catch (caught) { setError(caught.message) } }
-  }
-  const download = async file => {
-    if (user.demo) {
-      if (!file.blob) { setNotice('This sample file is not available to open in demo mode'); return }
-      const url = URL.createObjectURL(file.blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = file.name
-      link.click()
-      setTimeout(() => URL.revokeObjectURL(url), 1000)
-      return
-    }
-    const preview = window.open('about:blank', '_blank', 'noopener,noreferrer')
-    try {
-      const result = await api.download(file.id)
-      if (preview) preview.location.href = result.signedUrl
-      else window.location.href = result.signedUrl
-    } catch (caught) {
-      if (preview) preview.close()
-      setError(caught.message)
-    }
-  }
-  const saveFile = async file => {
-    try {
-      if (user.demo) {
-        if (!file.blob) { setNotice('This sample file is not available to download in demo mode'); return }
-        const url = URL.createObjectURL(file.blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = file.name
-        link.click()
-        setTimeout(() => URL.revokeObjectURL(url), 1000)
-        setNotice('Download started')
-        return
-      }
-      const result = await api.download(file.id)
-      const link = document.createElement('a')
-      link.href = result.signedUrl
-      link.download = file.name
-      link.target = '_blank'
-      link.rel = 'noopener noreferrer'
-      link.click()
-      setNotice('Download started')
-    } catch (caught) { setError(caught.message) }
-  }
-  const removeFile = async file => {
-    try {
-      if (!user.demo) {
-        if (active === 'Trash') await api.permanentDeleteFile(file.id)
-        else await api.deleteFile(file.id)
-      }
-      setFiles(current => current.filter(item => item.id !== file.id))
-      setNotice(active === 'Trash' ? 'File permanently deleted' : 'File moved to trash')
-    } catch (caught) { setError(caught.message) }
-  }
-  const restoreFile = async file => {
-    try { await api.restoreFile(file.id); setFiles(current => current.filter(item => item.id !== file.id)); setNotice('File restored') } catch (caught) { setError(caught.message) }
-  }
-  const share = async event => {
-    event.preventDefault(); if (!selected || !shareEmail.trim()) return
-    try { if (!user.demo) await api.share({ resourceType: 'file', resourceId: selected.id, granteeUserId: shareEmail.trim(), role: 'viewer' }); setNotice('Invite sent'); close() } catch (caught) { setError(caught.message) }
-  }
-  const renameFile = async event => {
-    event.preventDefault(); if (!selected || !renameName.trim()) return
-    try { if (!user.demo) await api.renameFile(selected.id, renameName.trim()); setFiles(current => current.map(item => item.id === selected.id ? { ...item, name: renameName.trim() } : item)); setNotice('File renamed'); close() } catch (caught) { setError(caught.message) }
-  }
-  const renameFolder = async event => {
-    event.preventDefault(); if (!selected || !renameName.trim()) return
-    try { if (!user.demo) await api.renameFolder(selected.id, renameName.trim()); setFolders(current => current.map(item => item.id === selected.id ? { ...item, name: renameName.trim() } : item)); setNotice('Folder renamed'); close() } catch (caught) { setError(caught.message) }
-  }
-  const deleteFolder = async folder => {
-    try {
-      if (!user.demo) await api.deleteFolder(folder.id)
-      setFolders(current => current.filter(item => item.id !== folder.id))
-      setNotice('Folder deleted')
-    } catch (caught) { setError(caught.message) }
-  }
-  const copyText = async text => {
-    try {
-      await navigator.clipboard.writeText(text)
-      return true
-    } catch {
-      const input = document.createElement('textarea')
-      input.value = text
-      input.style.position = 'fixed'
-      input.style.opacity = '0'
-      document.body.appendChild(input)
-      input.focus()
-      input.select()
-      const copied = document.execCommand('copy')
-      input.remove()
-      return copied
-    }
-  }
-  const createLink = async (file, showModal = true) => {
-    const target = file || selected
-    if (!target) return
-    try { const result = user.demo ? { linkShare: { token: 'demo-link' } } : await api.createPublicLink({ resourceType: 'file', resourceId: target.id }); const url = window.location.origin + '/shared/' + result.linkShare.token; setLinkUrl(url); const copied = await copyText(url); setNotice(copied ? 'Public link copied' : 'Could not copy the public link'); if (showModal) setModal('link') } catch (caught) { setError(caught.message) }
-  }
-  if (!authReady) return <div className="empty-state">Loading your account...</div>
-  if (!user) return <Auth onSuccess={nextUser => { if (nextUser.demo) localStorage.setItem('cloudly_demo_user', JSON.stringify(nextUser)); setUser(nextUser) }} />
-  const name = user.name || user.email || 'Jordan'
-  const initials = name.split(' ').map(part => part[0]).join('').slice(0, 2).toUpperCase()
-  return <div className="app-shell"><aside className="sidebar"><div className="brand"><b>*</b> Cloudly</div><button className="upload" onClick={() => setModal('upload')}>+ Upload files</button><nav>{nav.map(([label, icon]) => <button key={label} className={active === label ? 'active' : ''} onClick={() => { setActive(label); if (label === 'My files') setCurrentFolder(null) }}><Icon>{icon}</Icon>{label}</button>)}</nav><button className={active === 'Profile' ? 'active' : ''} onClick={() => setActive('Profile')}><Icon>U</Icon>My profile</button><div className="side-bottom"><div className="storage"><span>Storage</span><span>{storageText(storageUsed)} / 15 GB</span></div><div className="progress"><i style={{ width: storagePercent + '%' }} /></div><button className="upgrade">* <span><strong>Get more storage</strong><small>Upgrade your plan</small></span>&gt;</button><button onClick={() => { localStorage.removeItem('cloudly_token'); localStorage.removeItem('cloudly_demo_user'); setUser(null) }}>Sign out</button><button className="profile" type="button" onClick={() => setActive('Profile')}><b>{initials}</b><span><strong>{name}</strong><small>{user.demo ? 'Demo workspace' : 'Free plan'}</small></span></button></div></aside><main><header><div className="crumb"><span>My files</span> / <b>{active === 'My files' ? 'Overview' : active}</b></div><div className="actions"><label className="search">? <input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search files and folders" /></label><button className="mini" type="button" aria-label="Open my profile" onClick={() => setActive('Profile')}>{initials}</button></div></header><div className="content">{active === 'Profile photo' ? <><section className="welcome"><div><p>Account</p><h1>Profile photo</h1><span>View your profile photo.</span></div></section><ProfilePhotoPage user={user} onBack={() => setActive('Profile')} /></> : active === 'Profile' ? <><section className="welcome"><div><p>Account</p><h1>My profile</h1><span>Review your account details and workspace plan.</span></div></section><ProfilePage user={user} initials={initials} onPhotoChange={saveProfilePhoto} onPhotoOpen={() => setActive('Profile photo')} /></> : <>{notice && <div className="toast">{notice}<button onClick={() => setNotice('')}>x</button></div>}{error && <div className="notice page-notice">{error}<button onClick={() => setError('')}>x</button></div>}<section className="welcome"><div><p>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p><h1>{active === 'My files' ? (currentFolder ? currentFolder.name : 'Good morning, ' + name.split(' ')[0]) : active}</h1><span>Here is what is happening with your files today.</span></div><div>{currentFolder && <button className="new" onClick={() => setCurrentFolder(null)}>Back to My files</button>}<button className="new" onClick={() => setModal('folder')}>+ New folder</button></div></section>{active === 'My files' && <section className="stats"><Stat icon="[]" label="All files" value={files.length} note="Your workspace" /><Stat icon="S" label="Shared with me" value="-" note="Invite collaborators" /><Stat icon="~" label="Storage used" value={storageText(storageUsed)} note={storagePercent + "% of 15 GB used"} /></section>}<section className="block"><div className="heading"><h2>Folders <small>{visibleFolders.length} folders</small></h2><button onClick={() => setModal('folder')}>+ New folder</button></div><div className={view === 'grid' ? 'folder-grid' : 'folder-list'}>{visibleFolders.map(folder => <button className="folder" key={folder.id} onClick={() => { setCurrentFolder(folder); setActive('My files'); setQuery('') }}><i className="blue">~</i><span><strong>{folder.name}</strong><small>Updated recently</small></span><em onClick={event => { event.stopPropagation(); setSelected(folder); setRenameName(folder.name); setModal('rename-folder') }}>...</em><span className="folder-delete" onClick={event => { event.stopPropagation(); deleteFolder(folder) }}>Delete</span></button>)}<button className="folder add" onClick={() => setModal('folder')}><b>+</b><strong>Create new folder</strong></button></div></section><section className="block files"><div className="heading"><h2>{active === 'My files' ? 'Recent files' : active} <small>{visible.length} files</small></h2><div><button type="button" aria-pressed={view === 'grid'} className={view === 'grid' ? 'selected' : ''} onClick={() => setView('grid')}>Grid</button><button type="button" aria-pressed={view === 'list'} className={view === 'list' ? 'selected' : ''} onClick={() => setView('list')}>List</button></div></div>{loading ? <div className="empty-state">Loading...</div> : visible.length ? <div className={view === 'grid' ? 'file-grid' : 'file-list'}>{visible.map(file => <article className="file" key={file.id}><div className="file-top"><b className={'type ' + colorOf(file)}>{typeOf(file)}</b><button className="star" onClick={() => toggleStar(file)}>{file.starred ? '*' : 'o'}</button></div><strong title={file.name}>{file.name}</strong><small>{bytes(file.size_bytes)} - {dateOf(file.updated_at)}</small><footer><i>{initials}</i><span>You</span><button onClick={() => { setSelected(file); setModal('share') }}>Share</button><button onClick={() => download(file)}>Open</button><button onClick={() => saveFile(file)}>Download</button>{active !== 'Trash' && <><button onClick={() => { setSelected(file); setRenameName(file.name); setModal('rename') }}>Rename</button><button onClick={() => { setSelected(file); setModal('move') }}>Move</button><button onClick={() => createLink(file)}>Link</button><button onClick={() => { setSelected(file); setModal('copy') }}>Copy</button></>}{active === 'Trash' ? <button onClick={() => restoreFile(file)}>Restore</button> : <button onClick={() => removeFile(file)}>Delete</button>}</footer></article>)}</div> : <div className="empty-state"><b>No files here yet</b><span>Upload a file or create a folder to get started.</span><button className="new" onClick={() => setModal('upload')}>Upload a file</button></div>}</section></>}</div></main>{modal && <div className="backdrop" onClick={close}><div className="modal" onClick={event => event.stopPropagation()}><button className="close" onClick={close}>x</button>{modal === 'upload' ? <><div className="modal-icon">^</div><h2>Upload files</h2><p>Choose files from your computer.</p><button className="drop" onClick={() => picker.current.click()} onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); upload(event) }}>^<b>Click to choose files or drop here</b><small>Choose any file from your computer</small></button><input ref={picker} hidden type="file" multiple onChange={upload} /></> : modal === 'folder' ? <form onSubmit={createFolder}><h2>Create a folder</h2><p>Keep your files organized.</p><input autoFocus required value={folderName} onChange={event => setFolderName(event.target.value)} placeholder="Folder name" /><button className="submit">Create folder</button></form> : modal === 'rename' ? <form onSubmit={renameFile}><h2>Rename file</h2><input autoFocus required value={renameName} onChange={event => setRenameName(event.target.value)} /><button className="submit">Save name</button></form> : modal === 'rename-folder' ? <form onSubmit={renameFolder}><h2>Rename folder</h2><input autoFocus required value={renameName} onChange={event => setRenameName(event.target.value)} /><button className="submit">Save name</button></form> : modal === 'copy' ? <form onSubmit={copyFile}><h2>Copy file</h2><p>Choose the destination folder.</p><select name="folder" defaultValue=""><option value="">My files</option>{folders.map(folder => <option key={folder.id} value={folder.id}>{folder.name}</option>)}</select><button className="submit">Copy file</button></form> : modal === 'move' ? <form onSubmit={async event => { event.preventDefault(); const folderId = event.currentTarget.folder.value || null; try { if (!user.demo) await api.moveFile(selected.id, folderId); setNotice('File moved'); close() } catch (caught) { setError(caught.message) } }}><h2>Move file</h2><p>Choose a destination folder.</p><select name="folder" defaultValue=""><option value="">My files</option>{folders.map(folder => <option key={folder.id} value={folder.id}>{folder.name}</option>)}</select><button className="submit">Move file</button></form> : modal === 'link' ? <div><h2>Public link created</h2><p>{linkUrl}</p><button className="submit" onClick={close}>Done</button></div> : <form onSubmit={share}><h2>Share file</h2><p>Invite someone to collaborate on {selected && selected.name}.</p><input required type="email" value={shareEmail} onChange={event => setShareEmail(event.target.value)} placeholder="name@email.com" /><button className="submit">Send invite</button></form>}</div></div>}</div>
-}
-const Icon = ({ children }) => <span className="icon">{children}</span>
-const Stat = ({ icon, label, value, note }) => <div className="stat"><i>{icon}</i><span>{label}<strong>{value}</strong><small>{note}</small></span></div>

@@ -1,4 +1,5 @@
-﻿import supabase from "../config/Supabase.js";
+import supabase from "../config/Supabase.js";
+import { getPermission } from "../Services/permissionService.js";
 
 export const getActivity = async (req, res) => {
     try {
@@ -12,6 +13,8 @@ export const getActivity = async (req, res) => {
                 }
             });
         }
+
+        if (!await getPermission(resourceType, resourceId, req.user.id)) return res.status(403).json({ error: { code: "FORBIDDEN", message: "You do not have access to this resource" } });
 
         const { data, error } = await supabase
             .from("activities")
@@ -43,3 +46,5 @@ export const getActivity = async (req, res) => {
         });
     }
 };
+
+

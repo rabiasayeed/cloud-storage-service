@@ -1,10 +1,11 @@
-﻿import supabase from "../config/Supabase.js";
+import supabase from "../config/Supabase.js";
+import { validateEmail } from "../utilis/validation.js";
 
 export const register = async (req, res) => {
     try {
         const { email, password, name } = req.body;
 
-        if (!email || !password) {return res.status(400).json({
+        if (!validateEmail(email) || !password) {return res.status(400).json({
                 error: {
                     code: "VALIDATION_ERROR",
                     message: "Email and password are required",
@@ -60,7 +61,7 @@ export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        if (!email || !password) {
+        if (!validateEmail(email) || !password) {
             return res.status(400).json({
                 error: {
                     code: "VALIDATION_ERROR",
@@ -136,3 +137,5 @@ export const updateProfile = async (req, res) => {
         res.status(500).json({ error: { code: 'PROFILE_UPDATE_FAILED', message: error.message } });
     }
 };
+
+

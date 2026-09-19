@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 
 import { getRecentFiles } from "../Controllers/recentController.js";
 

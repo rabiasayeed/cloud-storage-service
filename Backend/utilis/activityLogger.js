@@ -1,4 +1,4 @@
-﻿
+
 import supabase from "../config/Supabase.js";
 
 export const logActivity = async ({

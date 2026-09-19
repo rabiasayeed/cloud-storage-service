@@ -1,4 +1,4 @@
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
+﻿CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email TEXT UNIQUE NOT NULL,
@@ -113,3 +113,8 @@ CREATE INDEX IF NOT EXISTS folders_owner_parent_idx ON folders(owner_id, parent_
 CREATE INDEX IF NOT EXISTS shares_grantee_idx ON shares(grantee_user_id, resource_type, resource_id);
 CREATE INDEX IF NOT EXISTS link_shares_token_idx ON link_shares(token);
 CREATE INDEX IF NOT EXISTS activities_resource_idx ON activities(resource_type, resource_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS file_versions_file_idx ON file_versions(file_id, version_number DESC);
+CREATE INDEX IF NOT EXISTS files_retention_idx ON files(is_deleted, deleted_at);
+
+

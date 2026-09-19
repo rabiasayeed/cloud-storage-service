@@ -1,4 +1,4 @@
-﻿import supabase from "../config/Supabase.js";
+import supabase from "../config/Supabase.js";
 
 export const starResource = async (req, res) => {
     try {

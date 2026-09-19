@@ -1,0 +1,22 @@
+﻿name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: Backend/package-lock.json }
+      - run: npm ci
+        working-directory: Backend
+      - run: npm test
+        working-directory: Backend
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: Frontend/package-lock.json }
+      - run: npm ci
+        working-directory: Frontend
+      - run: npm run build
+        working-directory: Frontend
