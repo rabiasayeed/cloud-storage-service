@@ -1,0 +1,2 @@
+import FileCard from '../components/FileCard'
+export default function Starred({ files = [], ...actions }) { const starred = files.filter(file => file.starred); return <section className="block files"><div className="heading"><h2>Starred <small>{starred.length} files</small></h2></div><div className="file-grid">{starred.map(file => <FileCard key={file.id} file={file} {...actions} />)}</div></section> }

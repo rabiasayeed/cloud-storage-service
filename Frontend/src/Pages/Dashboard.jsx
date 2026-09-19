@@ -1,0 +1,5 @@
+import FileCard from '../components/FileCard'
+import FolderCard from '../components/FolderCard'
+export default function Dashboard({ folders = [], files = [], view = 'grid', onFolder, onStar, onShare, onDownload, onDelete }) {
+  return <><section className="block"><div className="heading"><h2>Folders <small>{folders.length} folders</small></h2></div><div className="folder-grid">{folders.map(folder => <FolderCard key={folder.id} folder={folder} onOpen={onFolder} />)}</div></section><section className="block files"><div className="heading"><h2>Recent files <small>{files.length} files</small></h2></div><div className={view === 'grid' ? 'file-grid' : 'file-list'}>{files.map(file => <FileCard key={file.id} file={file} view={view} onStar={onStar} onShare={onShare} onDownload={onDownload} onDelete={onDelete} />)}</div></section></>
+}

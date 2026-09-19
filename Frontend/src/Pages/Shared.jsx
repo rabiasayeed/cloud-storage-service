@@ -1,0 +1,2 @@
+import FileCard from '../components/FileCard'
+export default function Shared({ files = [], ...actions }) { return <section className="block files"><div className="heading"><h2>Shared with me <small>{files.length} files</small></h2></div><div className="file-grid">{files.map(file => <FileCard key={file.id} file={file} {...actions} />)}</div></section> }

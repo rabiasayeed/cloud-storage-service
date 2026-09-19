@@ -1,0 +1,6 @@
+const colors = { pdf: 'red', png: 'purple', jpg: 'purple', zip: 'amber', docx: 'blue', xlsx: 'green' }
+const size = bytes => bytes > 1048576 ? (bytes / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round((bytes || 0) / 1024)) + ' KB'
+export default function FileCard({ file, onStar, onShare, onDownload, onDelete, view = 'grid' }) {
+  const extension = (file.name || 'FILE').split('.').pop().toLowerCase()
+  return <article className={'file ' + (view === 'list' ? 'file-row' : '')}><div className="file-top"><b className={'type ' + (colors[extension] || 'blue')}>{extension.toUpperCase().slice(0, 5)}</b><button className="star" aria-label="Toggle star" onClick={() => onStar?.(file)}>{file.starred ? '*' : 'o'}</button></div><strong title={file.name}>{file.name}</strong><small>{size(file.size_bytes)} - {file.updated_at ? new Date(file.updated_at).toLocaleDateString() : 'Recently'}</small><footer><i>You</i><span>You</span><button onClick={() => onShare?.(file)}>Share</button><button onClick={() => onDownload?.(file)}>Open</button>{onDelete && <button onClick={() => onDelete(file)}>Delete</button>}</footer></article>
+}

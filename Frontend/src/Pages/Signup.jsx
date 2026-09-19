@@ -1,0 +1,7 @@
+import { useState } from 'react'
+import { useAuth } from '../context/AuthContext'
+export default function Signup({ onSuccess, onLogin }) {
+  const { register } = useAuth(); const [form, setForm] = useState({ name: '', email: '', password: '' }); const [error, setError] = useState('')
+  const submit = async event => { event.preventDefault(); setError(''); try { await register(form); onSuccess?.() } catch (caught) { setError(caught.message) } }
+  return <div className="auth-shell"><div className="auth-card"><div className="brand"><b>*</b> Cloudly</div><h1>Create your account</h1><p>Start organizing your files today.</p><form onSubmit={submit}><input required placeholder="Your name" value={form.name} onChange={event => setForm({ ...form, name: event.target.value })} /><input required type="email" placeholder="Email address" value={form.email} onChange={event => setForm({ ...form, email: event.target.value })} /><input required minLength="6" type="password" placeholder="Password" value={form.password} onChange={event => setForm({ ...form, password: event.target.value })} />{error && <div className="notice">{error}</div>}<button className="submit">Create account</button></form><button className="auth-switch" onClick={onLogin}>Already have an account? Sign in</button></div></div>
+}

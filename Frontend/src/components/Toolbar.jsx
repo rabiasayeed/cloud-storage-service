@@ -1,0 +1,3 @@
+export default function Toolbar({ query, onQuery, view, onView, onNewFolder }) {
+  return <div className="toolbar"><label className="search">? <input value={query} onChange={event => onQuery?.(event.target.value)} placeholder="Search files and folders" /></label><button className="new" onClick={onNewFolder}>+ New folder</button><button className={view === 'grid' ? 'selected' : ''} onClick={() => onView?.('grid')}>Grid</button><button className={view === 'list' ? 'selected' : ''} onClick={() => onView?.('list')}>List</button></div>
+}

@@ -1,0 +1,2 @@
+import FileCard from '../components/FileCard'
+export default function Trash({ files = [], onRestore, onDelete, ...actions }) { return <section className="block files"><div className="heading"><h2>Trash <small>{files.length} files</small></h2></div><div className="file-grid">{files.map(file => <FileCard key={file.id} file={file} {...actions} onDelete={onDelete || onRestore} />)}</div></section> }
